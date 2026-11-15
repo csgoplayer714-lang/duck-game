@@ -319,10 +319,10 @@ local MAT = Enum.Material
 -- slots come from the Blender model: RimA/RimB (pebble rim, two shades), Boulder, Shore (soil under the rim),
 -- Grass, Lily, Flower, DecorA/DecorB/Glow (world extras). Water/Bed are styled from the world theme.
 local POND_STYLE = {
-	[1] = {RimA = {C(215, 212, 205), MAT.Slate}, RimB = {C(158, 156, 150), MAT.Slate}, Boulder = {C(190, 188, 182), MAT.Slate}, Shore = {C(92, 132, 62), MAT.Grass},
+	[1] = {RimA = {C(215, 212, 205), MAT.Slate}, RimB = {C(158, 156, 150), MAT.Slate}, Boulder = {C(190, 188, 182), MAT.Slate}, Shore = {C(222, 200, 150), MAT.Sand},
 		Grass = {C(130, 178, 90), MAT.SmoothPlastic}, Lily = {C(95, 175, 70), MAT.SmoothPlastic}, Flower = {C(255, 140, 190), MAT.SmoothPlastic},
 		DecorA = {C(235, 50, 60), MAT.SmoothPlastic}, DecorB = {C(250, 250, 250), MAT.SmoothPlastic}},
-	[2] = {RimA = {C(230, 215, 185), MAT.Slate}, RimB = {C(172, 158, 132), MAT.Slate}, Boulder = {C(200, 186, 160), MAT.Slate}, Shore = {C(110, 170, 80), MAT.Grass},
+	[2] = {RimA = {C(230, 215, 185), MAT.Slate}, RimB = {C(172, 158, 132), MAT.Slate}, Boulder = {C(200, 186, 160), MAT.Slate}, Shore = {C(235, 215, 165), MAT.Sand},
 		Grass = {C(100, 190, 80), MAT.SmoothPlastic}, Lily = {C(80, 180, 70), MAT.SmoothPlastic}, Flower = {C(255, 120, 190), MAT.SmoothPlastic}},
 	[3] = {RimA = {C(236, 245, 255), MAT.Snow}, RimB = {C(150, 170, 190), MAT.Slate}, Boulder = {C(212, 232, 248), MAT.Ice}, Shore = {C(232, 242, 255), MAT.Snow},
 		Grass = {C(190, 220, 232), MAT.SmoothPlastic}, DecorA = {C(225, 245, 255), MAT.Ice}, DecorB = {C(170, 225, 255), MAT.Ice}},
@@ -845,8 +845,8 @@ end
 local C3 = Color3.fromRGB
 local MAT = Enum.Material
 M.TerrainStyle = {
-	[1] = {Main = MAT.Grass, Edge = MAT.Sand, Hill = MAT.Rock},
-	[2] = {Main = MAT.LeafyGrass, Edge = MAT.Sand, Hill = MAT.Rock},
+	[1] = {Main = MAT.Sand, Edge = MAT.Sand, Hill = MAT.Rock},
+	[2] = {Main = MAT.Sand, Edge = MAT.Sand, Hill = MAT.Rock},
 	[3] = {Main = MAT.Snow, Edge = MAT.Glacier, Hill = MAT.Glacier},
 	[4] = {Main = MAT.Basalt, Edge = MAT.Basalt, Hill = MAT.CrackedLava},
 	[5] = {Main = MAT.Mud, Edge = MAT.Mud, Hill = MAT.Ground},
@@ -966,11 +966,12 @@ function M.Terrain(id, o, radius, avoid)
 	-- waterfall hill on the back-right of the pond, its rocks pouring into the water
 	local th = -1.05
 	local dir = Vector3.new(math.cos(th), 0, math.sin(th))
-	local hillPos = Vector3.new(pc.X, o.Y, pc.Z) + dir * (PoolSim.EdgeR(id, th) + 11)
-	T:FillBall(hillPos - Vector3.new(0, 7, 0), 17, st.Main)
-	T:FillBall(hillPos + dir * 2 - Vector3.new(0, 9, 0), 13, st.Hill)
+	-- the ball's front slope meets the ground ~9 studs behind the shore, right behind the waterfall rocks
+	local hillPos = Vector3.new(pc.X, o.Y, pc.Z) + dir * (PoolSim.EdgeR(id, th) + 25)
+	T:FillBall(hillPos - Vector3.new(0, 6, 0), 17, st.Main)
+	T:FillBall(hillPos + dir * 3 - Vector3.new(0, 8, 0), 12, st.Hill)
 	-- keep the pond floor clean of terrain
-	return hills, {pos = Vector3.new(pc.X, o.Y, pc.Z) + dir * (PoolSim.EdgeR(id, th) + 2.2), th = th}
+	return hills, {pos = Vector3.new(pc.X, o.Y, pc.Z) + dir * (PoolSim.EdgeR(id, th) + 3.2), th = th}
 end
 
 local function pick(list, rng)
@@ -1048,7 +1049,7 @@ function M.Nature(f, id, o, radius, avoid, fall)
 	-- a few trees next to the waterfall
 	for k = 1, 3 do
 		local side = Vector3.new(math.cos(fall.th + math.pi / 2), 0, math.sin(fall.th + math.pi / 2)) * (k - 2) * 8
-		plant(pick(pal.trees, rng), fall.pos + side + Vector3.new(math.cos(fall.th), 0, math.sin(fall.th)) * 9, 0.9)
+		plant(pick(pal.trees, rng), fall.pos + side * 1.6 + Vector3.new(math.cos(fall.th), 0, math.sin(fall.th)) * 14, 0.9)
 	end
 	return nat
 end
