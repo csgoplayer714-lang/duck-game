@@ -45,7 +45,7 @@ local function default()
 		title = "",
 		settings = {music = true, sfx = true, lowFx = false},
 		feathers = 0,
-		coop = {slots = 3, ducks = {}, bank = 0, last = 0},
+		coop = {slots = 3, ducks = {}, bank = 0, cbank = 0, last = 0},
 		cosmetics = {owned = {}, equipped = {}},
 	}
 end
@@ -114,6 +114,7 @@ function DataService.Validate(d)
 	for k, v in def.coop do if typeof(d.coop[k]) ~= typeof(v) then d.coop[k] = v end end
 	d.coop.slots = math.floor(num(d.coop.slots, 3, 3, 12))
 	d.coop.bank = num(d.coop.bank, 0, 0)
+	d.coop.cbank = num(d.coop.cbank, 0, 0)
 	d.coop.last = num(d.coop.last, 0, 0)
 	local cseen, clist = {}, {}
 	for _, uid in d.coop.ducks do

@@ -1265,7 +1265,7 @@ function M.CoopPlot(parent, i)
 	if basket then
 		basket.Name = "FeatherBasket"
 		basket.CanQuery = true
-		local pp = prompt(basket, "CoopCollect", "Collect Feathers", "Feather Basket")
+		local pp = prompt(basket, "CoopCollect", "Collect Feathers & Coins", "Feather Basket")
 		pp.MaxActivationDistance = 12
 		local glow = Instance.new("ParticleEmitter")
 		glow.Name = "FeatherGlow"; glow.Texture = "rbxasset://textures/particles/sparkles_main.dds"

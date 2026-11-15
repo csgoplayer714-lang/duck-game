@@ -31,6 +31,16 @@ function Coop.Rate(d)
 	return r -- feathers per minute
 end
 
+function Coop.CoinRate(d)
+	local r = 0
+	for _, uid in d.coop.ducks do
+		local rec = d.ducks[uid]
+		local duck = rec and DuckData.List[rec.id]
+		if duck then r += CoopData.CoinRate(duck, rec.l) end
+	end
+	return r -- coins per minute
+end
+
 -- rebuild the ducks walking around a plot (everyone sees them)
 local function refreshPlot(player)
 	local i = plotOf[player]
@@ -65,6 +75,8 @@ local function push(player)
 	local d = DataService.Get(player)
 	if not d then return end
 	player:SetAttribute("FeatherRate", Coop.Rate(d))
+	player:SetAttribute("CoinRate", Coop.CoinRate(d))
+	player:SetAttribute("CoinBank", math.floor(d.coop.cbank or 0))
 	DataService.Push(player, "coop", "feathers")
 end
 
@@ -88,10 +100,12 @@ local function onLoaded(player)
 	if d.coop.last > 0 and #d.coop.ducks > 0 then
 		local away = math.clamp(now - d.coop.last, 0, CoopData.OFFLINE_MAX)
 		local earned = Coop.Rate(d) * away / 60 * CoopData.OFFLINE_RATE
+		local coins = Coop.CoinRate(d) * away / 60 * CoopData.OFFLINE_RATE
 		if earned >= 1 then
 			d.coop.bank += earned
+			d.coop.cbank = (d.coop.cbank or 0) + coins
 			task.delay(6, function()
-				if player.Parent then Net.Fire(player, "Notify", {Text = string.format("\u{1FAB6} Your coop made %d Feathers while you were away! Collect them at your coop.", math.floor(earned)), Kind = "good"}) end
+				if player.Parent then Net.Fire(player, "Notify", {Text = string.format("\u{1FAB6} Your coop made %d Feathers and %d Coins while you were away! Collect them at your coop.", math.floor(earned), math.floor(coins)), Kind = "good"}) end
 			end)
 		end
 	end
@@ -147,15 +161,19 @@ local function collect(player)
 	local d = DataService.Get(player)
 	if not d then return {ok = false} end
 	local n = math.floor(d.coop.bank)
-	if n < 1 then return {ok = false, err = "Nothing to collect yet - put ducks in your coop!"} end
+	local c = math.floor(d.coop.cbank or 0)
+	if n < 1 and c < 1 then return {ok = false, err = "Nothing to collect yet - put ducks in your coop!"} end
 	d.coop.bank -= n
+	d.coop.cbank = (d.coop.cbank or 0) - c
 	d.feathers += n
+	if c > 0 then require(script.Parent.ProgressService).AddCoins(player, c) end
 	push(player)
+	DataService.Push(player, "coins", "stats", "quests")
 	local m = plotOf[player] and plotModel(plotOf[player])
 	local basket = m and m:FindFirstChild("FeatherBasket", true)
 	local pe = basket and basket:FindFirstChild("FeatherGlow")
 	if pe then pe:Emit(30) end
-	return {ok = true, amount = n, feathers = d.feathers}
+	return {ok = true, amount = n, coins = c, feathers = d.feathers}
 end
 
 local function upgrade(player)
@@ -240,6 +258,8 @@ function Coop.Init()
 					end
 					if changed then refreshPlot(p); push(p) end
 					d.coop.bank += Coop.Rate(d) / 60
+					d.coop.cbank = (d.coop.cbank or 0) + Coop.CoinRate(d) / 60
+					p:SetAttribute("CoinBank", math.floor(d.coop.cbank))
 					d.coop.last = os.time()
 					p:SetAttribute("FeatherBank", math.floor(d.coop.bank))
 					local m = plotModel(i)

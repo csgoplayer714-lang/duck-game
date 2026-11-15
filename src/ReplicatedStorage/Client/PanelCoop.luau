@@ -27,6 +27,16 @@ local function rateOf(rec)
 	local duck = DuckData.List[rec.id]
 	return duck and CoopData.DuckRate(duck.Rarity, rec.l) or 0
 end
+local function coinRateOf(rec)
+	local duck = DuckData.List[rec.id]
+	return duck and CoopData.CoinRate(duck, rec.l) or 0
+end
+local function r1(n) return UI.Abbrev(math.floor(n * 10 + 0.5) / 10) end
+local COIN = "<font color=\"#FFD84A\">\u{1F4B0}"
+-- "+2/min  +0.4 coins" style line for one duck
+local function perMin(rec)
+	return "\u{1FAB6}+" .. r1(rateOf(rec)) .. "  " .. COIN .. "+" .. r1(coinRateOf(rec)) .. "</font> /min"
+end
 
 local function duckTile(parent, rec, size, pos)
 	local duck = DuckData.List[rec.id]
@@ -43,9 +53,9 @@ local coopUI = {}
 local function refreshCoop()
 	local d = State.Data
 	if not d or not coopUI.slots then return end
-	local rate = 0
-	for _, uid in d.coop.ducks do local rec = d.ducks[uid]; if rec then rate += rateOf(rec) end end
-	coopUI.rate.Text = string.format("+%s Feathers / min", UI.Abbrev(math.floor(rate * 10 + 0.5) / 10))
+	local rate, crate = 0, 0
+	for _, uid in d.coop.ducks do local rec = d.ducks[uid]; if rec then rate += rateOf(rec); crate += coinRateOf(rec) end end
+	coopUI.rate.Text = "+" .. r1(rate) .. " Feathers  " .. COIN .. "+" .. r1(crate) .. " Coins</font> / min"
 	coopUI.feathers.Text = UI.Abbrev(d.feathers)
 	coopUI.slotsLbl.Text = string.format("Slots %d / %d", #d.coop.ducks, d.coop.slots)
 	local nxt = CoopData.SlotCost[d.coop.slots + 1]
@@ -69,7 +79,7 @@ local function refreshCoop()
 				duckTile(card, rec, UDim2.fromOffset(78, 70), UDim2.fromOffset(20, 6))
 				local nm = UI.Label(card, duck.Name, UDim2.new(1, -8, 0, 18), UDim2.fromOffset(4, 78), {ZIndex = 26, StrokeTh = 2})
 				UI.RarityGradient(nm, duck.Rarity)
-				UI.Label(card, "+" .. UI.Abbrev(math.floor(rateOf(rec) * 10 + 0.5) / 10) .. "/min", UDim2.new(1, -8, 0, 16), UDim2.fromOffset(4, 96), {ZIndex = 26, Font = UI.Body, TextColor3 = PINK})
+				UI.Label(card, perMin(rec), UDim2.new(1, -8, 0, 16), UDim2.fromOffset(4, 96), {ZIndex = 26, Font = UI.Body, TextColor3 = PINK})
 				UI.Button(card, {Text = "Remove", Color = UI.C.Red, Size = UDim2.new(1, -16, 0, 28), Position = UDim2.new(0, 8, 1, -34), Z = 26, Radius = 6, OnClick = function()
 					local r = State.Request("CoopRemove", uid); if not r.ok then UI.Toast(r.err or "Failed", "error") end
 				end})
@@ -94,7 +104,7 @@ local function refreshCoop()
 			duckTile(row, e.rec, UDim2.fromOffset(52, 52), UDim2.fromOffset(6, 6))
 			local nm = UI.Label(row, duck.Name .. "  Lv" .. e.rec.l, UDim2.new(1, -190, 0, 22), UDim2.fromOffset(64, 6), {ZIndex = 25, TextXAlignment = Enum.TextXAlignment.Left, StrokeTh = 2})
 			UI.RarityGradient(nm, duck.Rarity)
-			UI.Label(row, Rarity.List[duck.Rarity].Name .. "   +" .. UI.Abbrev(math.floor(e.r * 10 + 0.5) / 10) .. "/min", UDim2.new(1, -190, 0, 18), UDim2.fromOffset(64, 34), {ZIndex = 25, Font = UI.Body, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = PINK})
+			UI.Label(row, Rarity.List[duck.Rarity].Name .. "   " .. perMin(e.rec), UDim2.new(1, -190, 0, 18), UDim2.fromOffset(64, 34), {ZIndex = 25, Font = UI.Body, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = PINK})
 			local full = #d.coop.ducks >= d.coop.slots
 			UI.Button(row, {Text = "Add", Color = if full then GREY else UI.C.Green, Size = UDim2.fromOffset(100, 44), Position = UDim2.new(1, -110, 0.5, -22), Z = 26, Radius = 8, OnClick = function()
 				local r = State.Request("CoopAdd", e.uid)
@@ -110,7 +120,7 @@ end
 
 local function refreshBank()
 	if coopUI.bank then
-		coopUI.bank.Text = UI.Abbrev(player:GetAttribute("FeatherBank") or 0) .. " ready"
+		coopUI.bank.Text = "\u{1FAB6}" .. UI.Abbrev(player:GetAttribute("FeatherBank") or 0) .. "  " .. COIN .. UI.Abbrev(player:GetAttribute("CoinBank") or 0) .. "</font>"
 	end
 end
 
@@ -205,11 +215,11 @@ function M.Register()
 			local bar = Panels.Card(content, {Size = UDim2.new(1, 0, 0, 64), BackgroundColor3 = Color3.fromRGB(240, 170, 20)})
 			UI.Icon(bar, "feather", UDim2.fromOffset(56, 56), UDim2.fromOffset(6, 4), {ZIndex = 26})
 			coopUI.feathers = UI.Label(bar, "0", UDim2.fromOffset(140, 30), UDim2.fromOffset(64, 4), {ZIndex = 26, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.new(1, 1, 1)})
-			coopUI.rate = UI.Label(bar, "", UDim2.fromOffset(200, 22), UDim2.fromOffset(64, 36), {ZIndex = 26, Font = UI.Body, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 250, 220)})
-			coopUI.bank = UI.Label(bar, "0 ready", UDim2.fromOffset(150, 30), UDim2.fromOffset(268, 17), {ZIndex = 26, TextColor3 = PINK})
+			coopUI.rate = UI.Label(bar, "", UDim2.fromOffset(250, 22), UDim2.fromOffset(64, 36), {ZIndex = 26, Font = UI.Body, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 250, 220)})
+			coopUI.bank = UI.Label(bar, "0", UDim2.fromOffset(104, 30), UDim2.fromOffset(316, 17), {ZIndex = 26, TextColor3 = PINK})
 			UI.Button(bar, {Text = "Collect", Color = UI.C.Green, Size = UDim2.fromOffset(120, 46), Position = UDim2.fromOffset(424, 9), Z = 26, Radius = 8, OnClick = function()
 				local r = State.Request("CoopCollect")
-				if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers!", "good") else UI.Toast(r.err or "Failed", "warn") end
+				if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Failed", "warn") end
 			end})
 			coopUI.slotsLbl = UI.Label(bar, "", UDim2.fromOffset(110, 22), UDim2.fromOffset(554, 4), {ZIndex = 26, Font = UI.Body})
 			UI.Button(bar, {Text = "Auto-fill", Color = UI.C.Purple, Size = UDim2.fromOffset(110, 30), Position = UDim2.fromOffset(554, 28), Z = 26, Radius = 6, OnClick = function()
@@ -251,6 +261,7 @@ function M.Register()
 		end)
 	end
 	player:GetAttributeChangedSignal("FeatherBank"):Connect(refreshBank)
+	player:GetAttributeChangedSignal("CoinBank"):Connect(refreshBank)
 end
 
 return M

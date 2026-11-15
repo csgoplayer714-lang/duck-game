@@ -144,7 +144,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, who)
 	elseif action == "Style" then Panels.Open("Style")
 	elseif action == "CoopCollect" then
 		local r = State.Request("CoopCollect")
-		if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers!", "good") else UI.Toast(r.err or "Nothing yet", "warn") end
+		if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Nothing yet", "warn") end
 	elseif action == "Coop" then
 		if player:GetAttribute("AtCoop") then Panels.Open("Coop") else
 			local r = State.Request("GoCoop")
@@ -200,6 +200,7 @@ if game:GetService("RunService"):IsStudio() then
 		elseif cmd == "close" then Panels.Close() return true
 		elseif cmd == "cast" then task.spawn(Fishing.Cast) return true
 		elseif cmd == "fight" then Fishing._Fight(a) return true
+		elseif cmd == "req" then return State.Request(a, b)
 		elseif cmd == "busy" then return Fishing.Busy()
 		elseif cmd == "boss" then task.spawn(BattleView.StartBoss, a) return true
 		elseif cmd == "reveal" then Effects.Reveal({duckId = a, coins = 10, xp = 5, isNew = true}) return true

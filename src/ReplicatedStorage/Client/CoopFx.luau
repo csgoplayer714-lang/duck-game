@@ -119,7 +119,7 @@ local function updateBasket()
 	if not basket then return end
 	if not basketGui or basketGui.Adornee ~= basket then
 		if basketGui then basketGui:Destroy() end
-		basketGui = new("BillboardGui", {Parent = player:WaitForChild("PlayerGui"), Adornee = basket, Size = UDim2.fromOffset(190, 56), StudsOffset = Vector3.new(0, 3.2, 0), AlwaysOnTop = true, MaxDistance = 120, ResetOnSpawn = false})
+		basketGui = new("BillboardGui", {Parent = player:WaitForChild("PlayerGui"), Adornee = basket, Size = UDim2.fromOffset(230, 56), StudsOffset = Vector3.new(0, 3.2, 0), AlwaysOnTop = true, MaxDistance = 120, ResetOnSpawn = false})
 		local f = new("Frame", {Parent = basketGui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = UI.C.Bg})
 		UI.Corner(f, 10); UI.Stroke(f, UI.C.Outline, 3)
 		UI.Icon(f, "feather", UDim2.fromOffset(48, 48), UDim2.fromOffset(2, 4))
@@ -127,12 +127,14 @@ local function updateBasket()
 		UI.Label(f, "ready to collect", UDim2.new(1, -60, 0, 18), UDim2.fromOffset(54, 34), {Name = "Sub", TextXAlignment = Enum.TextXAlignment.Left, Font = UI.Body, TextColor3 = UI.C.Sub})
 	end
 	local amt = basketGui:FindFirstChild("Amount", true)
-	local txt = UI.Abbrev(player:GetAttribute("FeatherBank") or 0)
+	local txt = UI.Abbrev(player:GetAttribute("FeatherBank") or 0) .. "  <font color=\"#FFD84A\">\u{1F4B0}" .. UI.Abbrev(player:GetAttribute("CoinBank") or 0) .. "</font>"
 	if amt and amt.Text ~= txt then amt.Text = txt end
 	local sub = basketGui:FindFirstChild("Sub", true)
 	if sub then
 		local rate = player:GetAttribute("FeatherRate") or 0
-		sub.Text = if rate > 0 then string.format("+%s per minute", UI.Abbrev(math.floor(rate * 10 + 0.5) / 10)) else "put ducks in your coop!"
+		local crate = player:GetAttribute("CoinRate") or 0
+		local s = if rate > 0 then string.format("+%s & +%s coins / min", UI.Abbrev(math.floor(rate * 10 + 0.5) / 10), UI.Abbrev(math.floor(crate * 10 + 0.5) / 10)) else "put ducks in your coop!"
+		if sub.Text ~= s then sub.Text = s end
 	end
 end
 

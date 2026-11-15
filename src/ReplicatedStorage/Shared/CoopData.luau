@@ -1,4 +1,5 @@
--- Coop: ducks you put in your coop make Feathers over time (used for cosmetics).
+-- Coop: ducks you put in your coop make Feathers (for cosmetics) and a trickle of Coins over time.
+local Rarity = require(script.Parent.Rarity)
 local CoopData = {}
 
 CoopData.START_SLOTS = 3
@@ -14,6 +15,16 @@ CoopData.PLOTS = 8
 
 function CoopData.DuckRate(rarity: number, level: number): number
 	return (CoopData.RATE[rarity] or 1) * (1 + 0.03 * math.max(0, (level or 1) - 1))
+end
+
+-- coins per minute for one duck: 2% of what catching that duck pays, per minute, scaled by its
+-- world like catch rewards (+3% per duck level). A full coop of good ducks adds roughly a quarter
+-- of what active fishing earns - a nice bonus, never a replacement for catching.
+CoopData.COIN_FACTOR = 0.02
+function CoopData.CoinRate(duck, level: number): number
+	local tier = Rarity.List[duck.Rarity]
+	local worldMult = 1 + ((duck.World or 1) - 1) * 0.6
+	return (tier and tier.Coins or 10) * CoopData.COIN_FACTOR * worldMult * (1 + 0.03 * math.max(0, (level or 1) - 1))
 end
 
 -- plot i centre on the field (two rows of four, facing the middle path)
