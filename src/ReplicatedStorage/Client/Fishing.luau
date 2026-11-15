@@ -386,33 +386,80 @@ end
 ---------------------------------------------------------------- net fight (timing ring)
 local function closeFight()
 	fighting = nil
+	if fightUI.catcher then fightUI.catcher.Visible = false end
 	if fightUI.root then fightUI.root.Visible = false end
+	if fightUI.vp then fightUI.vp:Destroy(); fightUI.vp = nil end
 end
 
+local GOLD_SEQ = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 236, 120)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 205, 40)), ColorSequenceKeypoint.new(1, Color3.fromRGB(242, 160, 18))})
+
 local function buildFightUI()
-	local root = new("Frame", {Parent = screen, Name = "NetFight", Size = UDim2.fromOffset(340, 400), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Visible = false, ZIndex = 60})
+	-- full-screen catcher: a click / tap ANYWHERE counts while the duck is fighting
+	local catcher = new("TextButton", {Parent = screen, Name = "FightCatcher", Text = "", AutoButtonColor = false, Size = UDim2.new(1, 0, 1, 80),
+		Position = UDim2.fromOffset(0, -60), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.55, Visible = false, ZIndex = 58, Modal = true})
+	fightUI.catcher = catcher
+
+	-- panel: studded brown body + shiny studded gold header (same look as the menus)
+	local root = new("Frame", {Parent = screen, Name = "NetFight", Size = UDim2.fromOffset(380, 476), Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = UI.C.Bg, Visible = false, ZIndex = 60, Active = false})
+	UI.Corner(root, 14); UI.Studs(root, UI.Darken(UI.C.Bg, 0.45), 0.35, 26, 14); UI.Stroke(root, UI.C.Outline, 5)
 	fightUI.root = root
-	fightUI.title = UI.Label(root, "", UDim2.new(1, 0, 0, 40), UDim2.fromOffset(0, 0), {ZIndex = 61, StrokeTh = 3.5, TextColor3 = Color3.fromRGB(255, 240, 120)})
-	local dial = new("Frame", {Parent = root, Size = UDim2.fromOffset(260, 260), Position = UDim2.fromOffset(40, 50), BackgroundColor3 = UI.C.Bg, ZIndex = 61})
-	UI.Corner(dial, 130); UI.Stroke(dial, UI.C.Outline, 6)
-	UI.Studs(dial, UI.Darken(UI.C.Bg, 0.45), 0.4, 20, 14)
+	local header = new("Frame", {Parent = root, Name = "Header", Size = UDim2.new(1, 0, 0, 62), BackgroundColor3 = UI.C.Gold, ZIndex = 61})
+	UI.Corner(header, 14); UI.Gradient(header, GOLD_SEQ, nil, 90)
+	new("Frame", {Parent = header, Size = UDim2.new(1, 0, 0, 16), Position = UDim2.new(0, 0, 1, -16), BackgroundColor3 = Color3.fromRGB(242, 160, 18), BorderSizePixel = 0, ZIndex = 61})
+	UI.Studs(header, Color3.fromRGB(214, 130, 0), 0.35, 22, 14)
+	new("Frame", {Parent = header, Size = UDim2.new(1, 0, 0, 5), Position = UDim2.new(0, 0, 1, 0), BackgroundColor3 = UI.C.Outline, BorderSizePixel = 0, ZIndex = 62})
+	local iconHolder = new("Frame", {Parent = header, Size = UDim2.fromOffset(78, 78), Position = UDim2.fromOffset(-14, -16), BackgroundTransparency = 1, ZIndex = 63})
+	UI.Sunburst(iconHolder, UDim2.fromScale(1.5, 1.5), nil, Color3.fromRGB(255, 250, 210), 63, 0.25)
+	UI.Icon(iconHolder, "net", UDim2.fromScale(1, 1), nil, {ZIndex = 64, Rotation = -10})
+	fightUI.title = UI.Label(header, "DUCK FIGHT!", UDim2.new(1, -86, 0, 42), UDim2.fromOffset(72, 10), {TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 63, StrokeTh = 3.5})
+
+	-- rarity tag under the header
+	local tag = new("Frame", {Parent = root, Size = UDim2.fromOffset(220, 30), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = UI.C.Gold, ZIndex = 61})
+	UI.Corner(tag, 10); UI.Stroke(tag, UI.C.Outline, 3)
+	fightUI.tag = tag
+	fightUI.tagText = UI.Label(tag, "", UDim2.new(1, -12, 1, -4), UDim2.fromOffset(6, 2), {ZIndex = 62, StrokeTh = 2.5})
+
+	-- dial: gold rim, dark studded face, tick marks, thick green zone, white needle, duck in the hub
+	local rim = new("Frame", {Parent = root, Size = UDim2.fromOffset(272, 272), Position = UDim2.new(0.5, 0, 0, 118), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = UI.C.Gold, ZIndex = 61})
+	UI.Corner(rim, 136); UI.Gradient(rim, GOLD_SEQ, nil, 90); UI.Stroke(rim, UI.C.Outline, 5)
+	local dial = new("Frame", {Parent = rim, Size = UDim2.fromOffset(244, 244), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Bg2, ZIndex = 62})
+	UI.Corner(dial, 122); UI.Stroke(dial, UI.C.Outline, 4)
+	UI.Studs(dial, UI.Darken(UI.C.Bg2, 0.45), 0.4, 20, 122)
 	fightUI.dial = dial
+	for k = 0, 23 do
+		local ang = math.rad(k * 15)
+		local big = k % 6 == 0
+		local tk = new("Frame", {Parent = dial, Size = UDim2.fromOffset(big and 6 or 4, big and 16 or 9), AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, math.sin(ang) * 112, 0.5, -math.cos(ang) * 112), Rotation = k * 15, BackgroundColor3 = UI.C.Sub, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 63})
+		UI.Corner(tk, 2)
+	end
 	fightUI.dots = {}
-	for k = 1, 28 do
-		local dot = new("Frame", {Parent = dial, Size = UDim2.fromOffset(20, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Green, ZIndex = 62})
-		UI.Corner(dot, 10); UI.Stroke(dot, Color3.fromRGB(20, 70, 10), 2)
+	for k = 1, 40 do
+		local dot = new("Frame", {Parent = dial, Size = UDim2.fromOffset(24, 24), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Green, ZIndex = 64})
+		UI.Corner(dot, 12)
 		fightUI.dots[k] = dot
 	end
-	local pivot = new("Frame", {Parent = dial, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 63})
-	local needle = new("Frame", {Parent = pivot, Size = UDim2.fromOffset(10, 112), Position = UDim2.new(0.5, -5, 0.5, -112), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 64})
-	UI.Corner(needle, 5); UI.Stroke(needle, UI.C.Outline, 2.5)
-	local hub = new("Frame", {Parent = dial, Size = UDim2.fromOffset(46, 46), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Gold, ZIndex = 65})
-	UI.Corner(hub, 23); UI.Stroke(hub, UI.C.Outline, 3)
-	fightUI.duck = hub
+	local pivot = new("Frame", {Parent = dial, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 65})
+	local needle = new("Frame", {Parent = pivot, Size = UDim2.fromOffset(12, 108), Position = UDim2.new(0.5, -6, 0.5, -108), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 66})
+	UI.Corner(needle, 6); UI.Stroke(needle, UI.C.Outline, 3)
+	local tip = new("Frame", {Parent = pivot, Size = UDim2.fromOffset(22, 22), Position = UDim2.new(0.5, 0, 0.5, -106), AnchorPoint = Vector2.new(0.5, 0.5), Rotation = 45, BackgroundColor3 = UI.C.Red, ZIndex = 67})
+	UI.Corner(tip, 4); UI.Stroke(tip, UI.C.Outline, 3)
 	fightUI.pivot = pivot
-	fightUI.sub = UI.Label(root, "", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 318), {ZIndex = 61, Font = UI.Body})
-	fightUI.pips = new("Frame", {Parent = root, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 352), BackgroundTransparency = 1, ZIndex = 61})
+	local hub = new("Frame", {Parent = dial, Size = UDim2.fromOffset(92, 92), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Gold, ZIndex = 68})
+	UI.Corner(hub, 46); UI.Stroke(hub, UI.C.Outline, 4)
+	fightUI.hubGrad = UI.Gradient(hub, Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 170), 90)
+	fightUI.duck = hub
+
+	-- instruction strip (green, like a button) + round pips
+	local strip = new("Frame", {Parent = root, Size = UDim2.new(1, -40, 0, 42), Position = UDim2.new(0.5, 0, 0, 402), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = UI.C.Green, ZIndex = 61})
+	UI.Corner(strip, 12); UI.Stroke(strip, UI.C.Outline, 4)
+	UI.Gradient(strip, Color3.fromRGB(130, 240, 90), Color3.fromRGB(50, 170, 30), 90)
+	fightUI.sub = UI.Label(strip, "", UDim2.new(1, -16, 1, -8), UDim2.fromOffset(8, 4), {ZIndex = 62, StrokeTh = 2.5})
+	fightUI.stripScale = new("UIScale", {Parent = strip})
+	fightUI.pips = new("Frame", {Parent = root, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 1, -12), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, ZIndex = 62})
 	UI.List(fightUI.pips, 8, Enum.FillDirection.Horizontal, Enum.HorizontalAlignment.Center)
+	fightUI.scale = new("UIScale", {Parent = root})
 	-- sneak indicator + phone sneak button
 	fightUI.sneakLbl = UI.Label(screen, "\u{1F92B} SNEAKING", UDim2.fromOffset(220, 30), UDim2.new(0.5, -110, 0.5, 40), {ZIndex = 5, TextColor3 = Color3.fromRGB(170, 230, 255), StrokeTh = 2.5, Visible = false})
 	if isTouch then
@@ -429,12 +476,21 @@ local function showRound(info)
 	fighting = info
 	local root = fightUI.root
 	root.Visible = true
+	fightUI.catcher.Visible = true
 	local duck = DuckData.List[info.duckId]
 	local tier = duck and Rarity.List[duck.Rarity]
-	fightUI.title.Text = (if tier then string.upper(tier.Name) .. " DUCK" else "DUCK") .. " IS FIGHTING!"
-	fightUI.sub.Text = (if isTouch then "Tap" else "Click") .. " when the needle hits the green!"
-	UI.SetColor(fightUI.duck, tier and tier.Color or UI.C.Gold)
-	-- green arc
+	local col = tier and tier.Color or UI.C.Gold
+	fightUI.title.Text = "IT'S FIGHTING BACK!"
+	fightUI.tagText.Text = (if tier then string.upper(tier.Name) .. " " else "") .. string.upper(duck and duck.Name or "DUCK")
+	fightUI.tag.BackgroundColor3 = col
+	fightUI.duck.BackgroundColor3 = col
+	if not fightUI.vp or fightUI.vpId ~= info.duckId then
+		if fightUI.vp then fightUI.vp:Destroy() end
+		fightUI.vp = UI.Viewport(fightUI.duck, info.duckId, {Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.52), Anchor = Vector2.new(0.5, 0.5), Z = 69, Immediate = true, Zoom = 1.25})
+		fightUI.vpId = info.duckId
+	end
+	fightUI.sub.Text = "ON GREEN? " .. (if isTouch then "TAP" else "CLICK") .. " ANYWHERE!"
+	-- green zone as a solid arc of overlapping dots
 	local R = 112
 	local n = #fightUI.dots
 	for k, dot in fightUI.dots do
@@ -443,17 +499,23 @@ local function showRound(info)
 	end
 	for _, c in fightUI.pips:GetChildren() do if c:IsA("Frame") then c:Destroy() end end
 	for k = 1, info.rounds do
-		local pip = new("Frame", {Parent = fightUI.pips, Size = UDim2.fromOffset(26, 26), BackgroundColor3 = if k < info.round then UI.C.Green elseif k == info.round then UI.C.Gold else UI.C.Dark, LayoutOrder = k, ZIndex = 62})
-		UI.Corner(pip, 13); UI.Stroke(pip, UI.C.Outline, 2.5)
+		local pip = new("Frame", {Parent = fightUI.pips, Size = UDim2.fromOffset(24, 24), BackgroundColor3 = if k < info.round then UI.C.Green elseif k == info.round then UI.C.Gold else UI.C.Dark, LayoutOrder = k, ZIndex = 62})
+		UI.Corner(pip, 12); UI.Stroke(pip, UI.C.Outline, 3)
 	end
-	local sc = root:FindFirstChildOfClass("UIScale") or new("UIScale", {Parent = root})
-	sc.Scale = 0.6; UI.Tween(sc, 0.2, {Scale = 1}, Enum.EasingStyle.Back)
+	fightUI.pips.Visible = info.rounds > 1
+	local sc = fightUI.scale
+	local fit = math.min(1, (screen.AbsoluteSize.Y - 40) / 500)
+	sc.Scale = fit * 0.6; UI.Tween(sc, 0.2, {Scale = fit}, Enum.EasingStyle.Back)
+	fightUI.stripScale.Scale = 1.15; UI.Tween(fightUI.stripScale, 0.35, {Scale = 1}, Enum.EasingStyle.Back)
 	UI.Sound("swoosh", 1.4, 0.4)
 end
 
 local busyFight = false
+local lastSubmit = 0
 submitFight = function()
-	if not fighting or busyFight then return end
+	-- one press = one try (a tap on a button also reaches InputBegan, so drop the echo)
+	if not fighting or busyFight or os.clock() - lastSubmit < 0.3 then return end
+	lastSubmit = os.clock()
 	busyFight = true
 	local res = State.Request("Struggle", now())
 	busyFight = false
@@ -774,6 +836,15 @@ function Fishing.Init(s)
 	player.CharacterAdded:Connect(watchChar)
 	if player.Character then watchChar(player.Character) end
 	UserInputService.InputBegan:Connect(function(input, gp)
+		-- during a duck fight ANY click / tap / swing key counts, even over other buttons
+		if fighting then
+			local t = input.UserInputType
+			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch or input.KeyCode == Enum.KeyCode.Space
+				or input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.ButtonX or input.KeyCode == Enum.KeyCode.ButtonR2 or input.KeyCode == Enum.KeyCode.ButtonA then
+				submitFight()
+			end
+			return
+		end
 		if gp then return end
 		if (input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.ButtonX) and not Panels.Current() then
 			Fishing.Swing()

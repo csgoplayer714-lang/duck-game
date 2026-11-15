@@ -199,6 +199,7 @@ if game:GetService("RunService"):IsStudio() then
 		if cmd == "open" then Panels.Open(a, b) return Panels.Current()
 		elseif cmd == "close" then Panels.Close() return true
 		elseif cmd == "cast" then task.spawn(Fishing.Cast) return true
+		elseif cmd == "fight" then Fishing._Fight(a) return true
 		elseif cmd == "busy" then return Fishing.Busy()
 		elseif cmd == "boss" then task.spawn(BattleView.StartBoss, a) return true
 		elseif cmd == "reveal" then Effects.Reveal({duckId = a, coins = 10, xp = 5, isNew = true}) return true
