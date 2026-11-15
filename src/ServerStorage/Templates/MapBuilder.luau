@@ -319,10 +319,10 @@ local MAT = Enum.Material
 -- slots come from the Blender model: RimA/RimB (pebble rim, two shades), Boulder, Shore (soil under the rim),
 -- Grass, Lily, Flower, DecorA/DecorB/Glow (world extras). Water/Bed are styled from the world theme.
 local POND_STYLE = {
-	[1] = {RimA = {C(215, 212, 205), MAT.Slate}, RimB = {C(158, 156, 150), MAT.Slate}, Boulder = {C(190, 188, 182), MAT.Slate}, Shore = {C(222, 200, 150), MAT.Sand},
+	[1] = {RimA = {C(215, 212, 205), MAT.Slate}, RimB = {C(158, 156, 150), MAT.Slate}, Boulder = {C(190, 188, 182), MAT.Slate}, Shore = {C(92, 132, 62), MAT.Grass},
 		Grass = {C(130, 178, 90), MAT.SmoothPlastic}, Lily = {C(95, 175, 70), MAT.SmoothPlastic}, Flower = {C(255, 140, 190), MAT.SmoothPlastic},
 		DecorA = {C(235, 50, 60), MAT.SmoothPlastic}, DecorB = {C(250, 250, 250), MAT.SmoothPlastic}},
-	[2] = {RimA = {C(230, 215, 185), MAT.Slate}, RimB = {C(172, 158, 132), MAT.Slate}, Boulder = {C(200, 186, 160), MAT.Slate}, Shore = {C(235, 215, 165), MAT.Sand},
+	[2] = {RimA = {C(230, 215, 185), MAT.Slate}, RimB = {C(172, 158, 132), MAT.Slate}, Boulder = {C(200, 186, 160), MAT.Slate}, Shore = {C(110, 170, 80), MAT.Grass},
 		Grass = {C(100, 190, 80), MAT.SmoothPlastic}, Lily = {C(80, 180, 70), MAT.SmoothPlastic}, Flower = {C(255, 120, 190), MAT.SmoothPlastic}},
 	[3] = {RimA = {C(236, 245, 255), MAT.Snow}, RimB = {C(150, 170, 190), MAT.Slate}, Boulder = {C(212, 232, 248), MAT.Ice}, Shore = {C(232, 242, 255), MAT.Snow},
 		Grass = {C(190, 220, 232), MAT.SmoothPlastic}, DecorA = {C(225, 245, 255), MAT.Ice}, DecorB = {C(170, 225, 255), MAT.Ice}},
@@ -845,8 +845,8 @@ end
 local C3 = Color3.fromRGB
 local MAT = Enum.Material
 M.TerrainStyle = {
-	[1] = {Main = MAT.Sand, Edge = MAT.Sand, Hill = MAT.Rock},
-	[2] = {Main = MAT.Sand, Edge = MAT.Sand, Hill = MAT.Rock},
+	[1] = {Main = MAT.Grass, Edge = MAT.Sand, Hill = MAT.Rock},
+	[2] = {Main = MAT.LeafyGrass, Edge = MAT.Sand, Hill = MAT.Rock},
 	[3] = {Main = MAT.Snow, Edge = MAT.Glacier, Hill = MAT.Glacier},
 	[4] = {Main = MAT.Basalt, Edge = MAT.Basalt, Hill = MAT.CrackedLava},
 	[5] = {Main = MAT.Mud, Edge = MAT.Mud, Hill = MAT.Ground},
@@ -881,7 +881,7 @@ local NATURE = {
 		style = {Trunk = {C3(30, 18, 48), MAT.Slate, true}, Orb = {C3(200, 80, 255), MAT.Neon}, Leaves = {C3(150, 60, 230), MAT.Neon}}},
 }
 local FALL = {
-	water = {C3(150, 210, 255), MAT.Glass, 0.3}, lava = {C3(255, 110, 20), MAT.Neon, 0}, swamp = {C3(110, 140, 80), MAT.Glass, 0.25},
+	water = {C3(120, 195, 255), MAT.SmoothPlastic, 0.2}, lava = {C3(255, 110, 20), MAT.Neon, 0}, swamp = {C3(110, 140, 80), MAT.SmoothPlastic, 0.2},
 	void = {C3(170, 60, 255), MAT.Neon, 0.25},
 }
 local ROCKC = {[1] = C3(140, 138, 132), [2] = C3(160, 150, 130), [3] = C3(190, 215, 235), [4] = C3(45, 34, 32), [5] = C3(95, 95, 80), [6] = C3(210, 195, 245), [7] = C3(250, 244, 230), [8] = C3(40, 26, 62)}
@@ -982,6 +982,45 @@ local function pick(list, rng)
 	return list[1]
 end
 
+-- shared by builds and live patches: cliff behind the waterfall + flowing streak particles on the water
+function M.WaterfallDressing(id, wf, fall, fs)
+	if not wf then return end
+	local T = workspace.Terrain
+	local st = M.TerrainStyle[id]
+	-- "back" = away from the pond (the model's pivot has no useful orientation)
+	local pc = PoolSim.Center(id)
+	local base = Vector3.new(fall.pos.X, fall.pos.Y, fall.pos.Z)
+	local back = (Vector3.new(base.X, 0, base.Z) - Vector3.new(pc.X, 0, pc.Z)).Unit
+	local cf = CFrame.lookAt(base, base - back)
+	-- stepped cliff: lower ledge + upper ledge, both behind the water sheet
+	T:FillBall(base + back * 6.5 + Vector3.new(0, 1.5, 0), 5.5, st.Hill)
+	T:FillBall(base + back * 9.5 + Vector3.new(0, 7.5, 0), 5.5, st.Hill)
+	T:FillBall(base + back * 12 + Vector3.new(0, 4, 0), 7, st.Hill)
+	for _, side in {-1, 1} do
+		T:FillBall(base + back * 7 + cf.RightVector * side * 6 + Vector3.new(0, 3, 0), 5, st.Hill)
+	end
+	local water = wf:FindFirstChild("fall")
+	if water then
+		water.Material = fs[2]
+		water.Transparency = fs[3]
+		local flow = Instance.new("ParticleEmitter")
+		flow.Name = "Flow"
+		flow.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		flow.Color = ColorSequence.new(Color3.new(1, 1, 1), fs[1]:Lerp(Color3.new(1, 1, 1), 0.4))
+		flow.LightEmission = if fs[2] == MAT.Neon then 0.8 else 0.25
+		flow.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1)})
+		flow.Size = NumberSequence.new(0.7, 0.35)
+		flow.Squash = NumberSequence.new(-1.2) -- long vertical streaks
+		flow.Orientation = Enum.ParticleOrientation.VelocityParallel
+		flow.EmissionDirection = Enum.NormalId.Bottom
+		flow.Speed = NumberRange.new(10, 14)
+		flow.Lifetime = NumberRange.new(0.5, 0.8)
+		flow.Rate = 70
+		flow.SpreadAngle = Vector2.new(4, 4)
+		flow.Parent = water
+	end
+end
+
 function M.Nature(f, id, o, radius, avoid, fall)
 	local pal = NATURE[id]
 	local theme = M.Themes[id]
@@ -991,12 +1030,14 @@ function M.Nature(f, id, o, radius, avoid, fall)
 	style.Rock = {ROCKC[id], MAT.Slate, true}
 	style.Rock2 = {Color3.new(ROCKC[id].R * 0.8, ROCKC[id].G * 0.8, ROCKC[id].B * 0.8), MAT.Slate, true}
 	local fs = FALL[theme.Liquid] or FALL.water
-	if id == 3 then fs = {C3(200, 235, 255), MAT.Ice, 0.15} elseif id == 6 then fs = {C3(170, 150, 255), MAT.Glass, 0.25} elseif id == 7 then fs = {C3(255, 240, 190), MAT.Neon, 0.2} end
+	if id == 3 then fs = {C3(200, 235, 255), MAT.Ice, 0.15} elseif id == 6 then fs = {C3(170, 150, 255), MAT.SmoothPlastic, 0.2} elseif id == 7 then fs = {C3(255, 240, 190), MAT.Neon, 0.2} end
 	style.Fall = {fs[1], fs[2]}
 	style.Foam = {if id == 4 then C3(255, 220, 90) else C3(245, 250, 255), if id == 4 then MAT.Neon else MAT.SmoothPlastic}
 	-- waterfall into the pond
 	local wf = propMesh(nat, "Waterfall", CFrame.lookAt(fall.pos, PoolSim.Center(id) * Vector3.new(1, 0, 1) + Vector3.new(0, fall.pos.Y, 0)), 1.25, style)
 	if wf then
+		local lip = wf:FindFirstChild("lip")
+		if lip then lip.Transparency = fs[3] end
 		local water = wf:FindFirstChild("fall")
 		if water then
 			water.Transparency = fs[3]
@@ -1008,6 +1049,7 @@ function M.Nature(f, id, o, radius, avoid, fall)
 			pe.Parent = water
 		end
 	end
+	M.WaterfallDressing(id, wf, fall, fs)
 	table.insert(avoid, {fall.pos, Vector3.new(24, 0, 24)})
 	local function plant(entry, pos, sizeMul)
 		local y, n = groundY(pos)
