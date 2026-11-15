@@ -23,6 +23,7 @@ local Followers = require(Client.Followers)
 local RigAnimator = require(Client.RigAnimator)
 local PanelCoop = require(Client.PanelCoop)
 local CoopFx = require(Client.CoopFx)
+local Music = require(Client.Music)
 
 -- ScreenGui with a scaled root so every offset-based layout fits any screen
 local gui = Instance.new("ScreenGui")
@@ -93,13 +94,12 @@ FP.AddWatcher(function() return player:GetAttribute("InBattleView") == true end)
 UI.SfxEnabled = State.Data.settings.sfx
 WorldFx.LowFx = State.Data.settings.lowFx
 PanelMisc.OnLowFx = function(v) WorldFx.LowFx = v end
-local ambience = Instance.new("Sound")
-ambience.SoundId = "rbxasset://sounds/action_swim.mp3"
-ambience.Looped = true
-ambience.Volume = 0.05
-ambience.Parent = game:GetService("SoundService")
-if State.Data.settings.music then ambience:Play() end
-PanelMisc.OnMusic = function(v) if v then ambience:Play() else ambience:Stop() end end
+-- background music (follows hunting / chase / coop / battle)
+Music.IsCarrying = Fishing.IsCarrying
+Music.World = function() return State.Data and State.Data.world or 1 end
+Music.Enabled = State.Data.settings.music ~= false
+Music.Init()
+PanelMisc.OnMusic = function(v) Music.SetEnabled(v) end
 
 -- server events
 State.OnEvent("Notify", function(p) UI.Toast(p.Text, p.Kind) end)
@@ -144,7 +144,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, who)
 	elseif action == "Style" then Panels.Open("Style")
 	elseif action == "CoopCollect" then
 		local r = State.Request("CoopCollect")
-		if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Nothing yet", "warn") end
+		if r.ok then UI.Sound("coins", 1, 0.7); UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Nothing yet", "warn") end
 	elseif action == "Coop" then
 		if player:GetAttribute("AtCoop") then Panels.Open("Coop") else
 			local r = State.Request("GoCoop")

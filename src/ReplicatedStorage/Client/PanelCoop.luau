@@ -108,7 +108,7 @@ local function refreshCoop()
 			local full = #d.coop.ducks >= d.coop.slots
 			UI.Button(row, {Text = "Add", Color = if full then GREY else UI.C.Green, Size = UDim2.fromOffset(100, 44), Position = UDim2.new(1, -110, 0.5, -22), Z = 26, Radius = 8, OnClick = function()
 				local r = State.Request("CoopAdd", e.uid)
-				if r.ok then UI.Chime(2, 1.1) else UI.Toast(r.err or "Failed", "error") end
+				if r.ok then UI.Sound("quack", 1.1, 0.5); UI.Chime(2, 1.1) else UI.Toast(r.err or "Failed", "error") end
 			end})
 		end)
 	end
@@ -199,7 +199,7 @@ local function refreshStyle()
 				local can = d.feathers >= item.Price
 				local b = UI.Button(card, {IconImage = "feather", Text = UI.Abbrev(item.Price), Color = if can then UI.C.Green else GREY, Size = size, Position = pos, Z = 26, Radius = 8, OnClick = function()
 					local r = State.Request("CosBuy", item.Id)
-					if r.ok then UI.Chime(math.min(8, item.Rarity + 2), 1); UI.Toast("You got the " .. item.Name .. "! It's on you now.", "good")
+					if r.ok then UI.Sound("fanfare", 1, 0.5); UI.Toast("You got the " .. item.Name .. "! It's on you now.", "good")
 					else UI.Toast(r.err or "Failed", "error") end
 				end})
 			end
@@ -219,7 +219,7 @@ function M.Register()
 			coopUI.bank = UI.Label(bar, "0", UDim2.fromOffset(104, 30), UDim2.fromOffset(316, 17), {ZIndex = 26, TextColor3 = PINK})
 			UI.Button(bar, {Text = "Collect", Color = UI.C.Green, Size = UDim2.fromOffset(120, 46), Position = UDim2.fromOffset(424, 9), Z = 26, Radius = 8, OnClick = function()
 				local r = State.Request("CoopCollect")
-				if r.ok then UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Failed", "warn") end
+				if r.ok then UI.Sound("coins", 1, 0.7); UI.Chime(5, 1.1); UI.Toast("+" .. UI.Abbrev(r.amount) .. " Feathers & +" .. UI.Abbrev(r.coins or 0) .. " Coins!", "good") else UI.Toast(r.err or "Failed", "warn") end
 			end})
 			coopUI.slotsLbl = UI.Label(bar, "", UDim2.fromOffset(110, 22), UDim2.fromOffset(554, 4), {ZIndex = 26, Font = UI.Body})
 			UI.Button(bar, {Text = "Auto-fill", Color = UI.C.Purple, Size = UDim2.fromOffset(110, 30), Position = UDim2.fromOffset(554, 28), Z = 26, Radius = 6, OnClick = function()

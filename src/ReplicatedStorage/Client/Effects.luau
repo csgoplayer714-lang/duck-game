@@ -93,6 +93,9 @@ local function doReveal(info)
 		UI.Sound("flash", 1, 0.6)
 	end
 	local rayHolder = rays(overlay, tier.Glow, 10 + r * 2, 81)
+	-- reveal jingle: big brass for Legendary+, a happy sting for the rest
+	UI.Sound(if r >= 5 then "fanfare" else "sting", 1, if r >= 5 then 0.55 else 0.45)
+	UI.Sound("squeak", 1.1, 0.5)
 	-- framed reward card: studded gold header, dark-brown studded body, rarity tile with a spinning sunburst
 	local card = new("Frame", {Parent = overlay, Size = UDim2.fromOffset(420, 540), Position = UDim2.fromScale(0.5, 0.47), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = UI.C.Bg, ZIndex = 84})
 	UI.Corner(card, 14)

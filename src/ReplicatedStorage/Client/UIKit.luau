@@ -153,24 +153,39 @@ function UI.Odds(n: number): string
 end
 
 ---------------------------------------------------------------- sounds
+-- licensed Creator Store sounds (Pro Sound Effects / APM Music) + Roblox built-ins.
+-- A list means "pick one at random" so repeated sounds don't feel robotic.
 local SOUNDS = {
-	click = "rbxasset://sounds/electronicpingshort.wav",
-	swoosh = "rbxasset://sounds/action_jump.mp3",
-	ui = "rbxasset://sounds/button.wav",
+	click = "rbxasset://sounds/electronicpingshort.wav", -- tonal ping used by chimes
+	ui = "rbxassetid://8755541422", -- soft pop for buttons
+	swoosh = {"rbxassetid://9120972321", "rbxassetid://9120972444"},
 	victory = "rbxasset://sounds/victory.wav",
 	bass = "rbxasset://sounds/bass.mp3",
 	flash = "rbxasset://sounds/flashbulb.wav",
 	snap = "rbxasset://sounds/snap.mp3",
-	splash = "rbxasset://sounds/impact_water.mp3",
+	splash = {"rbxassetid://9125703162", "rbxassetid://9125702803"},
 	swim = "rbxasset://sounds/action_swim.mp3",
 	jump = "rbxasset://sounds/action_jump.mp3",
 	hit = "rbxasset://sounds/hit.wav",
+	quack = {"rbxassetid://9068554227", "rbxassetid://6239232266"},
+	squeak = {"rbxassetid://9125994778", "rbxassetid://9125994570", "rbxassetid://9125994773"},
+	coin = "rbxassetid://1169806635",
+	coins = "rbxassetid://7437419566",
+	boing = "rbxassetid://2772396665",
+	sting = "rbxassetid://1839881844", -- short happy jingle
+	fanfare = "rbxassetid://9045298695", -- big brassy jingle
+	fail = "rbxassetid://1841983099", -- sad trombone-ish sting
 }
+local function pickSound(name)
+	local id = SOUNDS[name]
+	if type(id) == "table" then id = id[math.random(1, #id)] end
+	return id
+end
 local soundObjs = {}
 UI.SfxEnabled = true
 function UI.Sound(name: string, pitch: number?, volume: number?)
 	if not UI.SfxEnabled then return end
-	local id = SOUNDS[name]
+	local id = pickSound(name)
 	if not id then return end
 	local s = Instance.new("Sound")
 	s.SoundId = id
@@ -179,8 +194,34 @@ function UI.Sound(name: string, pitch: number?, volume: number?)
 	s.Parent = SoundService
 	s:Play()
 	s.Ended:Once(function() s:Destroy() end)
-	task.delay(5, function() if s.Parent then s:Destroy() end end)
+	task.delay(8, function() if s.Parent then s:Destroy() end end)
 end
+-- 3D sound that comes from a part in the world (louder when you're close)
+function UI.SoundAt(name: string, part: Instance?, pitch: number?, volume: number?)
+	if not UI.SfxEnabled or not part or not part:IsA("BasePart") then return end
+	local id = pickSound(name)
+	if not id then return end
+	local s = Instance.new("Sound")
+	s.SoundId = id
+	s.Volume = volume or 0.6
+	s.PlaybackSpeed = (pitch or 1) * (0.94 + math.random() * 0.12)
+	s.RollOffMinDistance = 12
+	s.RollOffMaxDistance = 140
+	s.Parent = part
+	s:Play()
+	s.Ended:Once(function() s:Destroy() end)
+	task.delay(8, function() if s.Parent then s:Destroy() end end)
+end
+-- preload so the first play isn't silent
+task.spawn(function()
+	local list = {}
+	for _, v in SOUNDS do
+		for _, id in (if type(v) == "table" then v else {v}) do
+			if id:find("rbxassetid") then local s = Instance.new("Sound"); s.SoundId = id; table.insert(list, s) end
+		end
+	end
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync(list) end)
+end)
 -- ascending chime, more notes for rarer ducks
 function UI.Chime(notes: number, base: number?)
 	for i = 1, notes do

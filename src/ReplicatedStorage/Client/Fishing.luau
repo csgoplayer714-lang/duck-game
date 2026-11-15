@@ -364,7 +364,7 @@ function Fishing.Swing()
 		local l = new("BillboardGui", {Parent = marker, Size = UDim2.fromOffset(140, 40), StudsOffsetWorldSpace = Vector3.new(0, 2, 0), AlwaysOnTop = true})
 		marker.CFrame = CFrame.new(aim)
 		local txt = if res.dodged then "DODGED!" elseif predicted then "So close!" else "Missed!"
-		if res.dodged then UI.Sound("swoosh", 1.6, 0.6) end
+		if res.dodged then UI.Sound("swoosh", 1.6, 0.6); UI.Sound("quack", 1.25, 0.55) end
 		UI.Label(l, txt, UDim2.fromScale(1, 1), nil, {TextColor3 = Color3.fromRGB(255, 120, 120), StrokeTh = 2.5})
 		UI.Tween(l, 0.6, {StudsOffsetWorldSpace = Vector3.new(0, 4, 0)})
 		task.delay(0.6, function() l:Destroy() end)
@@ -376,7 +376,9 @@ function Fishing.Swing()
 		flyIntoNet(e)
 	end
 	UI.Sound("splash", 0.9, 0.7)
+	UI.Sound("squeak", 1, 0.7)
 	if res.fight then
+		UI.Sound("quack", 0.8, 0.8) -- angry duck
 		Fishing._Fight(res.fight)
 		return
 	end
@@ -531,6 +533,7 @@ submitFight = function()
 	elseif res.lost then
 		closeFight()
 		UI.Sound("swoosh", 0.7, 0.8)
+		UI.Sound("fail", 1, 0.45)
 		UI.Toast("It wriggled out of your net and swam off!", "warn")
 	end
 end
@@ -581,6 +584,8 @@ function Fishing._StartCarry(duckId)
 	UI.Chime(math.min(8, duck.Rarity), 1)
 	UI.Toast("You scooped " .. duck.Name .. " (" .. tier.Name .. ")! Now RUN!", "good")
 end
+
+function Fishing.IsCarrying() return carrying ~= nil end
 
 function Fishing._EndCarry()
 	if carrying then
@@ -681,6 +686,11 @@ end
 
 local function setMom(st)
 	if not st then return end
+	if st.m == "chase" and mom.mode ~= "chase" then
+		-- Mom spotted you: an angry honk from her
+		UI.SoundAt("quack", mom.model and mom.model.PrimaryPart, 0.55, 1)
+		UI.Sound("quack", 0.55, 0.5)
+	end
 	mom.mode = st.m or "patrol"
 	mom.t0 = st.t0 or 0
 	mom.from = st.from
@@ -749,10 +759,11 @@ function Fishing.Init(s)
 			UI.Tween(sc, 0.25, {Scale = 1.2}, Enum.EasingStyle.Back)
 			task.delay(1.1, function() bb:Destroy() end)
 			splash(e.model:GetPivot().Position, 0.7)
+			UI.SoundAt("quack", e.root, 1.15, 0.8) -- startled quack
 		end
 	end)
 	State.OnEvent("FightLost", function()
-		if fighting then closeFight(); UI.Toast("Too slow! The duck wriggled free.", "warn") end
+		if fighting then closeFight(); UI.Sound("fail", 1, 0.45); UI.Toast("Too slow! The duck wriggled free.", "warn") end
 	end)
 	State.OnEvent("PoolDodge", function(p)
 		local e = ducks[p.rec.u]
@@ -760,6 +771,7 @@ function Fishing.Init(s)
 		e.rec = p.rec
 		e.dash = {from = p.from, t0 = os.clock()}
 		splash(p.from, 1, Rarity.List[e.duck.Rarity].Glow)
+		UI.SoundAt("quack", e.root, 1.3, 0.8)
 	end)
 	State.OnEvent("MomCaught", function(p)
 		Fishing._EndCarry()
@@ -770,6 +782,9 @@ function Fishing.Init(s)
 		if h then h:ChangeState(Enum.HumanoidStateType.Freefall) end
 		stunUntil = os.clock() + 1
 		UI.Sound("swoosh", 0.6, 0.9)
+		UI.Sound("boing", 0.8, 0.7)
+		UI.Sound("quack", 0.6, 0.9)
+		task.delay(0.5, function() UI.Sound("fail", 1, 0.45) end)
 		Effects.Flash(Color3.fromRGB(255, 60, 60), 0.35)
 		local duck = DuckData.List[p.duckId]
 		bigText("BONK! MOM GOT YOU!", Color3.fromRGB(255, 90, 90), (duck and duck.Name or "The duck") .. " swam back to the pond")
@@ -781,11 +796,12 @@ function Fishing.Init(s)
 			local duck = DuckData.List[res.duckId]
 			HUD.SetStreak(res.streak, res.streakBonus)
 			UI.Sound("splash", 0.8, 0.5)
+			UI.Sound("coin", 1, 0.6)
 			if res.isNew or duck.Rarity >= 4 then
 				Effects.Reveal({duckId = res.duckId, coins = res.coins, xp = res.xp, isNew = res.isNew})
 			else
 				bigText("SAFE!", Color3.fromRGB(120, 255, 140))
-				UI.Chime(duck.Rarity, 1)
+				UI.Sound("sting", 1, 0.4)
 				catchPop(duck, res)
 			end
 		elseif res.why == "lost" or res.why == "world" then

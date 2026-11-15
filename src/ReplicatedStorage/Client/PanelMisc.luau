@@ -390,7 +390,7 @@ function M.Register()
 			end})
 		end
 		toggle(1, "\u{1F50A} Sound effects", "sfx", function(v) UI.SfxEnabled = v end)
-		toggle(2, "\u{1F3B5} Ambient sounds", "music", function(v) if M.OnMusic then M.OnMusic(v) end end)
+		toggle(2, "\u{1F3B5} Music", "music", function(v) if M.OnMusic then M.OnMusic(v) end end)
 		toggle(3, "\u{1F4A8} Low effects (better performance)", "lowFx", function(v) if M.OnLowFx then M.OnLowFx(v) end end)
 		-- titles
 		local c = Panels.Card(sBody, {Size = UDim2.new(1, -12, 0, 56), LayoutOrder = 4})
