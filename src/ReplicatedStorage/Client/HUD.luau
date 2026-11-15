@@ -12,6 +12,7 @@ local Panels = require(script.Parent.Panels)
 local new = UI.new
 
 local HUD = {}
+HUD.Buttons = {} -- label -> button (the tutorial points at these)
 local player = Players.LocalPlayer
 
 local function pill(parent, icon, color, order, width)
@@ -30,6 +31,12 @@ end
 
 local function bigButton(parent, icon, label, color, order, onClick)
 	local holder = new("Frame", {Parent = parent, Size = UDim2.fromOffset(84, 92), BackgroundTransparency = 1, LayoutOrder = order, ZIndex = 5})
+	-- soft gold glow behind the button while its menu is open
+	local glow = new("Frame", {Parent = holder, Name = "ActiveGlow", Size = UDim2.fromOffset(90, 90), Position = UDim2.fromOffset(42, 38), AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = Color3.fromRGB(255, 225, 90), BackgroundTransparency = 1, ZIndex = 4})
+	UI.Corner(glow, 18)
+	HUD.Glows = HUD.Glows or {}
+	HUD.Glows[label] = glow
 	local b = UI.Button(holder, {Icon = "", Text = "", Color = color, Size = UDim2.fromOffset(76, 76), Position = UDim2.fromOffset(4, 0), Radius = 12, StrokeTh = 3.5, Z = 5, OnClick = onClick})
 	UI.Sunburst(b, UDim2.fromScale(1.15, 1.15), nil, Color3.new(1, 1, 1), 5, 0.6)
 	UI.Icon(b, icon, UDim2.fromScale(1.05, 1.05), UDim2.fromScale(0.5, 0.46), {AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 7})
@@ -38,6 +45,7 @@ local function bigButton(parent, icon, label, color, order, onClick)
 	UI.Corner(badge, 12)
 	UI.Stroke(badge, Color3.new(1, 1, 1), 2)
 	local bl = UI.Label(badge, "!", UDim2.fromScale(0.8, 0.8), UDim2.fromScale(0.1, 0.1), {ZIndex = 10})
+	HUD.Buttons[label] = b
 	return b, badge, bl
 end
 
@@ -74,8 +82,8 @@ function HUD.Build(screen)
 	UI.Icon(worldF, "portal", UDim2.fromOffset(44, 44), UDim2.new(0, -10, 0.5, 0), {AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
 	local worldText = UI.Label(worldF, "Carnival Island", UDim2.new(1, -48, 1, -8), UDim2.fromOffset(38, 4), {TextXAlignment = Enum.TextXAlignment.Left, StrokeTh = 2.5})
 
-	-- LEFT
-	local left = new("Frame", {Parent = root, Name = "Left", Size = UDim2.fromOffset(90, 600), Position = UDim2.new(0, 14, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1})
+	-- SIDE MENUS: five big buttons on each side, hugging the screen edges (mirror images of each other)
+	local left = new("Frame", {Parent = root, Name = "Left", Size = UDim2.fromOffset(90, 500), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1})
 	UI.List(left, 8)
 	local _, colBadge = bigButton(left, "duck", "Ducks", UI.C.Yellow, 1, function() Panels.Toggle("Collection") end)
 	bigButton(left, "net", "Equipment", UI.C.Blue, 2, function() Panels.Toggle("Equipment") end)
@@ -88,16 +96,15 @@ function HUD.Build(screen)
 			if not r.ok then UI.Toast(r.err or "Can't go there now", "warn") else UI.Sound("swoosh", 0.8, 0.6) end
 		end
 	end)
-	bigButton(left, "style", "Style", UI.C.Pink, 6, function() Panels.Toggle("Style") end)
 	HUD.CoopBadge = coopBadge
 
-	-- RIGHT
-	local right = new("Frame", {Parent = root, Name = "Right", Size = UDim2.fromOffset(90, 420), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), BackgroundTransparency = 1})
+	local right = new("Frame", {Parent = root, Name = "Right", Size = UDim2.fromOffset(90, 500), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), BackgroundTransparency = 1})
 	UI.List(right, 8)
 	bigButton(right, "basket", "Shop", UI.C.Pink, 1, function() Panels.Toggle("Shop") end)
-	local _, rebBadge = bigButton(right, "rebirth", "Rebirth", UI.C.Purple, 2, function() Panels.Toggle("Rebirth") end)
-	bigButton(right, "swords", "Battle", UI.C.Red, 3, function() Panels.Toggle("Battle") end)
-	bigButton(right, "portal", "Worlds", UI.C.Teal, 4, function() Panels.Toggle("Worlds") end)
+	bigButton(right, "style", "Style", Color3.fromRGB(255, 120, 200), 2, function() Panels.Toggle("Style") end)
+	local _, rebBadge = bigButton(right, "rebirth", "Rebirth", UI.C.Purple, 3, function() Panels.Toggle("Rebirth") end)
+	bigButton(right, "swords", "Battle", UI.C.Red, 4, function() Panels.Toggle("Battle") end)
+	bigButton(right, "portal", "Worlds", UI.C.Teal, 5, function() Panels.Toggle("Worlds") end)
 
 	-- small top-right buttons
 	local tr = new("Frame", {Parent = root, Size = UDim2.fromOffset(200, 50), Position = UDim2.new(1, -16, 0, 10), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1})
@@ -108,39 +115,54 @@ function HUD.Build(screen)
 	UI.Button(tr, {IconImage = "trophy", Color = UI.C.Orange, Size = UDim2.fromOffset(48, 48), Order = 2, OnClick = function() Panels.Toggle("Leaderboards") end})
 	UI.Button(tr, {IconImage = "gear_blue", Color = UI.C.Card, Size = UDim2.fromOffset(48, 48), Order = 3, OnClick = function() Panels.Toggle("Settings") end})
 
-	-- BOTTOM
-	local bottom = new("Frame", {Parent = root, Name = "Bottom", Size = UDim2.fromOffset(700, 110), Position = UDim2.new(0.5, 0, 1, -12), AnchorPoint = Vector2.new(0.5, 1), BackgroundTransparency = 1})
-	-- team slots
-	local teamF = new("Frame", {Parent = bottom, Size = UDim2.fromOffset(250, 84), Position = UDim2.new(0, 0, 1, 0), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = UI.C.Bg})
-	UI.Corner(teamF, 12); UI.Studs(teamF, UI.Darken(UI.C.Bg, 0.45), 0.4, 18, 12); UI.Stroke(teamF, UI.C.Outline, 4)
-	local teamTag = new("Frame", {Parent = teamF, Size = UDim2.fromOffset(74, 24), Position = UDim2.fromOffset(8, -14), BackgroundColor3 = UI.C.Gold, ZIndex = 4})
-	UI.Corner(teamTag, 6); UI.Gradient(teamTag, Color3.fromRGB(255, 236, 120), Color3.fromRGB(242, 160, 18), 90); UI.Stroke(teamTag, UI.C.Outline, 2.5)
-	UI.Label(teamTag, "TEAM", UDim2.new(1, -8, 1, -4), UDim2.fromOffset(4, 2), {ZIndex = 5, StrokeTh = 2})
-	local slots = {}
-	for i = 1, 3 do
-		local s = new("TextButton", {Parent = teamF, Size = UDim2.fromOffset(72, 66), Position = UDim2.fromOffset(10 + (i - 1) * 79, 10), BackgroundColor3 = UI.C.Card, Text = "", AutoButtonColor = false})
-		UI.Corner(s, 8)
-		UI.Sunburst(s, UDim2.fromScale(1.1, 1.1), nil, Color3.fromRGB(255, 245, 210), 1, 0.55)
-		local st = UI.Stroke(s, UI.C.Outline, 3)
-		s.Activated:Connect(function() Panels.Open("Collection") end)
-		slots[i] = {Frame = s, Stroke = st}
+	-- BOTTOM: team (bottom-left corner) | SWING (centre) | quick buttons (bottom-right corner).
+	-- Both corner groups use the same tiles as the side menus so the screen reads as one mirrored layout.
+	local bottom = new("Frame", {Parent = root, Name = "Bottom", Size = UDim2.new(1, -16, 0, 124), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), BackgroundTransparency = 1})
+	local TILE = 80
+	local GROUP_W = 3 * (TILE + 8) + 2 * 6
+	local function tile(parent, order, label, color, onClick, iconImage)
+		local holder = new("Frame", {Parent = parent, Size = UDim2.fromOffset(TILE + 8, TILE + 24), BackgroundTransparency = 1, LayoutOrder = order, ZIndex = 5})
+		local b = UI.Button(holder, {IconImage = iconImage, Text = "", Color = color, Size = UDim2.fromOffset(TILE, TILE), Position = UDim2.fromOffset(4, 0), Radius = 12, StrokeTh = 3.5, Z = 5, OnClick = onClick})
+		UI.Sunburst(b, UDim2.fromScale(1.15, 1.15), nil, Color3.new(1, 1, 1), 5, 0.6)
+		local l = UI.Label(holder, label, UDim2.new(1, 8, 0, 22), UDim2.new(0, -4, 1, -22), {ZIndex = 8, StrokeTh = 2.5})
+		HUD.Buttons[label] = b
+		return b, l, holder
 	end
+	local function group(name, anchorX, tagText)
+		local g = new("Frame", {Parent = bottom, Name = name, Size = UDim2.fromOffset(GROUP_W, TILE + 40), Position = UDim2.new(anchorX, 0, 1, 0), AnchorPoint = Vector2.new(anchorX, 1), BackgroundTransparency = 1})
+		local row = new("Frame", {Parent = g, Name = "Row", Size = UDim2.new(1, 0, 0, TILE + 24), Position = UDim2.new(0, 0, 1, 0), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1})
+		UI.List(row, 6, Enum.FillDirection.Horizontal, Enum.HorizontalAlignment.Center)
+		-- gold ribbon over the group, like the panel headers
+		local tag = new("Frame", {Parent = g, Size = UDim2.fromOffset(124, 26), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = UI.C.Gold, ZIndex = 9})
+		UI.Corner(tag, 8); UI.Gradient(tag, Color3.fromRGB(255, 236, 120), Color3.fromRGB(242, 160, 18), 90); UI.Stroke(tag, UI.C.Outline, 2.5)
+		UI.Studs(tag, Color3.fromRGB(214, 130, 0), 0.45, 14, 8)
+		UI.Label(tag, tagText, UDim2.new(1, -8, 1, -4), UDim2.fromOffset(4, 2), {ZIndex = 10, StrokeTh = 2})
+		new("UIScale", {Parent = g})
+		return g, row
+	end
+	local teamF, teamRow = group("Team", 0, "YOUR TEAM")
+	local slots = {}
+	for k = 1, 3 do
+		local b, l = tile(teamRow, k, "Empty", UI.C.Card, function() Panels.Open("Collection", "My Ducks") end, nil)
+		local plus = UI.Label(b, "+", UDim2.fromScale(0.6, 0.6), UDim2.fromScale(0.2, 0.18), {Name = "Plus", ZIndex = 7, TextColor3 = UI.C.Sub, StrokeTh = 3})
+		slots[k] = {Frame = b, Label = l, Plus = plus}
+	end
+	HUD.TeamFrame = teamF
 	-- cast button
-	local cast = UI.Button(bottom, {IconImage = "net", Text = "SWING", Color = UI.C.Green, Size = UDim2.fromOffset(200, 74), Position = UDim2.new(0.5, 0, 1, -6), Anchor = Vector2.new(0.5, 1), Radius = 12, StrokeTh = 4})
+	local cast = UI.Button(bottom, {IconImage = "net", Text = "SWING", Color = UI.C.Green, Size = UDim2.fromOffset(220, 80), Position = UDim2.new(0.5, 0, 1, -16), Anchor = Vector2.new(0.5, 1), Radius = 14, StrokeTh = 4})
 	cast.Name = "CastButton"
 	HUD.CastButton = cast
 	local castHint = UI.Label(bottom, "Walk to the pond & grab your net", UDim2.fromOffset(320, 22), UDim2.new(0.5, -160, 0, 0), {Font = UI.Body, StrokeTh = 2.5})
 	HUD.CastHint = castHint
-	-- shortcuts
-	local sc = new("Frame", {Parent = bottom, Size = UDim2.fromOffset(200, 60), Position = UDim2.new(1, 0, 1, -6), AnchorPoint = Vector2.new(1, 1), BackgroundTransparency = 1})
-	UI.List(sc, 8, Enum.FillDirection.Horizontal, Enum.HorizontalAlignment.Right)
-	local rodBtn = UI.Button(sc, {IconImage = "net", Color = UI.C.Card, Size = UDim2.fromOffset(56, 56), Order = 1, Radius = 10, OnClick = function() HUD.ToggleRod() end})
+	-- quick buttons (mirror of the team group)
+	local sc, scRow = group("Quick", 1, "QUICK")
+	local rodBtn = tile(scRow, 1, "Net", UI.C.Blue, function() HUD.ToggleRod() end, "net")
 	HUD.RodButton = rodBtn
-	UI.Button(sc, {IconImage = "duck", Color = UI.C.Yellow, Size = UDim2.fromOffset(56, 56), Order = 2, Radius = 10, OnClick = function() Panels.Open("Collection", "My Ducks") end})
-	UI.Button(sc, {IconImage = "team", Color = UI.C.Purple, Size = UDim2.fromOffset(56, 56), Order = 3, Radius = 10, OnClick = function()
+	tile(scRow, 2, "My Ducks", UI.C.Yellow, function() Panels.Open("Collection", "My Ducks") end, "duck")
+	tile(scRow, 3, "Auto Team", UI.C.Purple, function()
 		local r = State.Request("AutoTeam")
 		UI.Toast(if r.ok then "Equipped your strongest ducks!" else (r.err or "Couldn't auto-equip"), if r.ok then "good" else "error")
-	end})
+	end, "team")
 
 	-- toasts
 	local toasts = new("Frame", {Parent = screen, Name = "Toasts", Size = UDim2.fromOffset(460, 340), Position = UDim2.new(0.5, 0, 0, 74), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 40})
@@ -217,17 +239,19 @@ function HUD.Build(screen)
 			local sig = if rec then (uid .. ":" .. rec.id .. ":" .. rec.l) else "empty"
 			if slotSig[i] == sig then continue end
 			slotSig[i] = sig
-			for _, c in s.Frame:GetChildren() do if c:IsA("ViewportFrame") or c.Name == "Lv" then c:Destroy() end end
+			for _, c in s.Frame:GetChildren() do if c:IsA("ViewportFrame") then c:Destroy() end end
 			if rec then
 				local duck = DuckData.List[rec.id]
-				s.Frame.BackgroundColor3 = UI.Darken(UI.RarityColor(duck.Rarity), 0.55)
-				s.Stroke.Color = UI.RarityColor(duck.Rarity)
-				UI.Viewport(s.Frame, rec.id, {Zoom = 1.25})
-				local lv = UI.Label(s.Frame, "Lv" .. rec.l, UDim2.fromOffset(40, 16), UDim2.new(1, -42, 1, -18), {Font = UI.Body, ZIndex = 3})
-				lv.Name = "Lv"
+				UI.SetColor(s.Frame, UI.Darken(UI.RarityColor(duck.Rarity), 0.1))
+				UI.Viewport(s.Frame, rec.id, {Zoom = 1.2, Z = 7})
+				s.Plus.Visible = false
+				s.Label.Text = "Lv " .. rec.l
+				s.Label.TextColor3 = UI.Lighten(UI.RarityColor(duck.Rarity), 0.4)
 			else
-				s.Frame.BackgroundColor3 = UI.C.Card
-				s.Stroke.Color = UI.C.Outline
+				UI.SetColor(s.Frame, UI.C.Card)
+				s.Plus.Visible = true
+				s.Label.Text = "Empty"
+				s.Label.TextColor3 = UI.C.Sub
 			end
 		end
 	end
@@ -310,6 +334,8 @@ function HUD.Build(screen)
 	local rightScale = new("UIScale", {Parent = right})
 	local castScale = new("UIScale", {Parent = cast})
 	local rodHome = {Parent = rodBtn.Parent, Size = rodBtn.Size}
+	local teamScale = teamF:FindFirstChildOfClass("UIScale")
+	local scScale = sc:FindFirstChildOfClass("UIScale")
 	local castHome = {Size = cast.Size, Position = cast.Position, Anchor = cast.AnchorPoint}
 	HUD.TopY = 66
 	-- side menus: one tall column on PC, a compact 2x2 grid on phones (bigger buttons in less height)
@@ -326,11 +352,11 @@ function HUD.Build(screen)
 		if on then
 			if g.list then g.list.Parent = nil end
 			g.grid.Parent = col
-			col.Size = UDim2.fromOffset(180, if col == left then 300 else 200)
+			col.Size = UDim2.fromOffset(180, 300)
 		else
 			g.grid.Parent = nil
 			if g.list then g.list.Parent = col end
-			col.Size = UDim2.fromOffset(90, if col == left then 600 else 420)
+			col.Size = UDim2.fromOffset(90, 500)
 		end
 	end
 	local function jumpRect(s)
@@ -392,27 +418,37 @@ function HUD.Build(screen)
 			local colScale = math.clamp(availH / 300, 0.6, 1.1)
 			leftScale.Scale = colScale; rightScale.Scale = colScale
 			left.AnchorPoint = Vector2.new(0, 0); right.AnchorPoint = Vector2.new(1, 0)
-			left.Position = UDim2.fromOffset(14, HUD.TopY + 50)
-			right.Position = UDim2.new(1, -14, 0, HUD.TopY + 50)
-			-- bottom bar: team + two shortcuts only, kept clear of the swing button
-			bottom.Size = UDim2.fromOffset(410, 110)
+			left.Position = UDim2.fromOffset(8, HUD.TopY + 50)
+			right.Position = UDim2.new(1, -8, 0, HUD.TopY + 50)
+			-- bottom bar: just the team (quick buttons live elsewhere on phones), kept clear of the swing button
+			sc.Visible = false
+			local tw = teamF.Size.X.Offset
+			bottom.Size = UDim2.fromOffset(tw, 124)
 			local maxRight = (jp.X - 14 - 230 - 16)
-			local cx = math.min(size.X / 2, maxRight - 205)
+			local cx = math.min(size.X / 2, maxRight - tw / 2)
 			bottom.AnchorPoint = Vector2.new(0.5, 1)
 			bottom.Position = UDim2.new(0, cx, 1, -10)
+			teamScale.Scale = math.clamp((maxRight - 20) / tw, 0.7, 1)
 			castHint.Parent = root
 			castHint.Position = UDim2.fromOffset(jp.X - 14 - 230 / 2 - 160, jp.Y + js.Y - 100 - 28)
 		else
 			cast.Parent = bottom
 			cast.AnchorPoint = castHome.Anchor; cast.Size = castHome.Size; cast.Position = castHome.Position
-			rodBtn.Parent = rodHome.Parent; rodBtn.Size = rodHome.Size; rodBtn.AnchorPoint = Vector2.zero; rodBtn.Position = UDim2.new()
+			rodBtn.Parent = rodHome.Parent; rodBtn.Size = rodHome.Size; rodBtn.AnchorPoint = Vector2.zero; rodBtn.Position = UDim2.fromOffset(4, 0)
 			castHint.Parent = bottom; castHint.Position = UDim2.new(0.5, -160, 0, 0)
-			bottom.Size = UDim2.fromOffset(700, 110); bottom.AnchorPoint = Vector2.new(0.5, 1); bottom.Position = UDim2.new(0.5, 0, 1, -12)
+			sc.Visible = true
+			bottom.Size = UDim2.new(1, -16, 0, 124); bottom.AnchorPoint = Vector2.new(0.5, 1); bottom.Position = UDim2.new(0.5, 0, 1, -8)
+			-- corner groups shrink together on narrow windows so they never touch the SWING button
+			local gs = math.clamp((size.X - 16 - 250) / (2 * teamF.Size.X.Offset), 0.6, 1)
+			teamScale.Scale = gs; scScale.Scale = gs
+			-- side columns: centred in the space between the top bar and the corner groups, flush to the edges
 			setGrid(left, false); setGrid(right, false)
-			local colScale = math.clamp((size.Y - HUD.TopY - 170) / 600, 0.55, 1)
+			local top0, bot0 = HUD.TopY + 46, size.Y - 8 - 124 * gs - 8
+			local colScale = math.clamp((bot0 - top0) / 500, 0.5, 1)
 			leftScale.Scale = colScale; rightScale.Scale = colScale
 			left.AnchorPoint = Vector2.new(0, 0.5); right.AnchorPoint = Vector2.new(1, 0.5)
-			left.Position = UDim2.new(0, 14, 0.5, 0); right.Position = UDim2.new(1, -14, 0.5, 0)
+			local cy = (top0 + bot0) / 2
+			left.Position = UDim2.new(0, 8, 0, cy); right.Position = UDim2.new(1, -8, 0, cy)
 		end
 	end
 	HUD.Layout()
@@ -422,6 +458,17 @@ function HUD.Build(screen)
 	-- the TouchGui appears a moment after spawn; re-place the swing button next to the real jump button
 	task.delay(2, HUD.Layout)
 	player.CharacterAdded:Connect(function() task.delay(1.5, HUD.Layout) end)
+
+	---------------------------------------------------------------- active-menu highlight
+	local PANEL_BUTTON = {Collection = "Ducks", Equipment = "Equipment", Skills = "Skills", Quests = "Quests", Coop = "Coop",
+		Shop = "Shop", Style = "Style", Rebirth = "Rebirth", Battle = "Battle", Worlds = "Worlds"}
+	Panels.OnChange(function(name)
+		local want = name and PANEL_BUTTON[name]
+		for label, g in HUD.Glows or {} do
+			local on = label == want
+			UI.Tween(g, 0.25, {BackgroundTransparency = if on then 0.35 else 1, Size = if on then UDim2.fromOffset(94, 94) else UDim2.fromOffset(80, 80)}, Enum.EasingStyle.Quint)
+		end
+	end)
 
 	---------------------------------------------------------------- entrance animation
 	local function slideIn(frame, from: UDim2, delayT)

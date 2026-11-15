@@ -28,6 +28,13 @@ end
 local QUINT = Enum.EasingStyle.Quint
 local registry = {}
 local current
+local listeners = {}
+-- fn(name or nil) whenever the open panel changes (the HUD lights up the matching button)
+function Panels.OnChange(fn) table.insert(listeners, fn) end
+local function changed()
+	local n = current and current.Def.Name
+	for _, fn in listeners do task.spawn(fn, n) end
+end
 local host, backdrop
 
 function Panels.Init(screen)
@@ -97,6 +104,7 @@ function Panels.Open(name: string, ...)
 	end
 	if current then current.Frame.Visible = false; current.Glow.Visible = false end
 	current = panel
+	changed()
 	backdrop.Visible = true
 	UI.Tween(backdrop, 0.3, {BackgroundTransparency = 0.5}, QUINT)
 	-- (no world blur: a full-screen blur pass re-renders the 3D scene every frame; the dark backdrop is enough)
@@ -148,6 +156,7 @@ function Panels.Close()
 	if not current then return end
 	local panel = current
 	current = nil
+	changed()
 	UI.Tween(panel.Frame, 0.18, {Position = UDim2.new(0.5, 0, 0.5, (panel.YOff or 0) + 30)}, QUINT)
 	UI.Tween(panel.Glow, 0.18, {BackgroundTransparency = 1, Position = UDim2.new(0.5, 0, 0.5, (panel.YOff or 0) + 30)}, QUINT)
 	UI.Tween(backdrop, 0.2, {BackgroundTransparency = 1}, QUINT)

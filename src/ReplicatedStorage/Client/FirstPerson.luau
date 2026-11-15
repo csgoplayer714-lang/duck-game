@@ -154,7 +154,7 @@ function FP.Init(screen)
 	UI.Stroke(crossDot, UI.C.Outline, 1.5)
 	local ringScale = new("UIScale", {Parent = crossRing})
 	crossHint = UI.Label(screen, "", UDim2.fromOffset(300, 22), UDim2.new(0.5, -150, 0.5, 26), {Font = UI.Body, ZIndex = 2})
-	cursorHint = UI.Label(screen, if isTouch then "" else "[Alt] / [C] Cursor", UDim2.fromOffset(200, 18), UDim2.new(0, 16, 1, -26), {Font = UI.Body, TextColor3 = UI.C.Sub, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2})
+	cursorHint = UI.Label(screen, if isTouch then "" else "[Alt] / [C] Cursor", UDim2.fromOffset(200, 16), UDim2.new(0.5, -100, 1, -18), {Font = UI.Body, TextColor3 = UI.C.Sub, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 2})
 
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if input.KeyCode == Enum.KeyCode.LeftAlt or input.KeyCode == Enum.KeyCode.C then

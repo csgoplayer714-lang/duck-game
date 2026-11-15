@@ -43,7 +43,7 @@ local function default()
 		daily = {last = 0, streak = 0},
 		pvp = {rating = Config.PVP_START_RATING, peak = Config.PVP_START_RATING, streak = 0, bestStreak = 0, season = Config.SeasonId(), titles = {}},
 		title = "",
-		settings = {music = true, sfx = true, lowFx = false},
+		settings = {music = true, sfx = true, lowFx = false, tutorialDone = false},
 		feathers = 0,
 		coop = {slots = 3, ducks = {}, bank = 0, cbank = 0, last = 0},
 		cosmetics = {owned = {}, equipped = {}},

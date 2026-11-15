@@ -24,6 +24,7 @@ local RigAnimator = require(Client.RigAnimator)
 local PanelCoop = require(Client.PanelCoop)
 local CoopFx = require(Client.CoopFx)
 local Music = require(Client.Music)
+local Tutorial = require(Client.Tutorial)
 
 -- ScreenGui with a scaled root so every offset-based layout fits any screen
 local gui = Instance.new("ScreenGui")
@@ -89,6 +90,7 @@ CoopFx.Init()
 FP.AddWatcher(function() return Panels.Current() ~= nil end)
 FP.AddWatcher(function() return Effects.IsRevealing() end)
 FP.AddWatcher(function() return player:GetAttribute("InBattleView") == true end)
+FP.AddWatcher(function() return Tutorial.Active end)
 
 -- settings
 UI.SfxEnabled = State.Data.settings.sfx
@@ -173,20 +175,10 @@ for _, c in loading:GetDescendants() do
 end
 task.delay(0.65, function() loading:Destroy() end)
 
-if State.Data.stats.caught == 0 then
-	task.delay(1.5, function()
-		local touch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-		if touch then
-			UI.Toast("Welcome to DUCK RNG! Tap the net button to grab your net, wade into the pond and scoop up a duck. Then get out before Mom catches you!", "quest")
-			task.wait(4)
-			UI.Toast("Drag to look around, point the ring at a duck and tap SWING (or tap the screen). Pinch to zoom out for third person.", "quest")
-		else
-			UI.Toast("Welcome to DUCK RNG! Press 1 to grab your net, wade into the pond and scoop up a duck. Then get out before Mom catches you!", "quest")
-			task.wait(4)
-			UI.Toast("Aim the ring at a duck and click to scoop it! Rare ducks swim faster. Scroll out for third person, [Alt] frees your cursor.", "quest")
-		end
-	end)
-end
+-- new players: cinematic tour + guided first steps (replayable from Settings)
+Tutorial.IsCarrying = Fishing.IsCarrying
+PanelMisc.OnReplayTutorial = function() Panels.Close(); Tutorial.Run() end
+Tutorial.MaybeStart()
 if State.MemoryOnly then
 	task.delay(3, function() UI.Toast("Studio test: DataStores unavailable, progress won't save.", "warn") end)
 end
@@ -201,6 +193,11 @@ if game:GetService("RunService"):IsStudio() then
 		elseif cmd == "cast" then task.spawn(Fishing.Cast) return true
 		elseif cmd == "fight" then Fishing._Fight(a) return true
 		elseif cmd == "req" then return State.Request(a, b)
+		elseif cmd == "tutorial" then Tutorial.Run(a) return true
+		elseif cmd == "tutShot" then return Tutorial._shot
+		elseif cmd == "tutSkip" then if Tutorial._skipNow then Tutorial._skipNow() end return true
+		elseif cmd == "tutNext" then if Tutorial._nextNow then Tutorial._nextNow() end return true
+		elseif cmd == "tutState" then return {active = Tutorial.Active, guiding = Tutorial.Guiding}
 		elseif cmd == "busy" then return Fishing.Busy()
 		elseif cmd == "boss" then task.spawn(BattleView.StartBoss, a) return true
 		elseif cmd == "reveal" then Effects.Reveal({duckId = a, coins = 10, xp = 5, isNew = true}) return true

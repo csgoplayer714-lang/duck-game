@@ -403,8 +403,14 @@ function M.Register()
 			local r = State.Request("SetTitle", t)
 			if r.ok then d.title = t; refreshSettings() end
 		end})
+		-- replay the new-player tour
+		local tc = Panels.Card(sBody, {Size = UDim2.new(1, -12, 0, 56), LayoutOrder = 5})
+		UI.Label(tc, "\u{1F3AC} Tutorial & island tour", UDim2.new(1, -200, 1, -16), UDim2.fromOffset(14, 8), {ZIndex = 25, TextXAlignment = Enum.TextXAlignment.Left})
+		UI.Button(tc, {Text = "Replay", Color = UI.C.Blue, Size = UDim2.fromOffset(120, 42), Position = UDim2.new(1, -134, 0.5, -21), Z = 26, OnClick = function()
+			if M.OnReplayTutorial then M.OnReplayTutorial() end
+		end})
 		if State.MemoryOnly then
-			local w = Panels.Card(sBody, {Size = UDim2.new(1, -12, 0, 50), LayoutOrder = 5, BackgroundColor3 = UI.Darken(UI.C.Orange, 0.5)})
+			local w = Panels.Card(sBody, {Size = UDim2.new(1, -12, 0, 50), LayoutOrder = 6, BackgroundColor3 = UI.Darken(UI.C.Orange, 0.5)})
 			UI.Label(w, "\u{26A0}\u{FE0F} Saving is off in this Studio session (enable API access to test saving)", UDim2.new(1, -20, 1, -14), UDim2.fromOffset(10, 7), {ZIndex = 25, Font = UI.Body})
 		end
 	end
