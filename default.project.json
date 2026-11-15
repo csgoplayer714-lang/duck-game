@@ -1,0 +1,23 @@
+{
+  "name": "duck-rng",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": { "$path": "src/ReplicatedStorage/Shared" },
+      "Client": { "$path": "src/ReplicatedStorage/Client" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/ServerScriptService"
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Templates": { "$path": "src/ServerStorage/Templates" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": { "$path": "src/StarterPlayer/StarterPlayerScripts" }
+    }
+  }
+}
